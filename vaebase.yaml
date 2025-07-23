@@ -1,0 +1,64 @@
+# @package _global_
+
+out_dir: ${hydra.runtime.cwd}/results/vaebaseline/${now:%Y-%m-%d_%H%M}
+model:
+  learning_rate: 0.0001
+  beta: 1
+  z_dim: 256
+  spatial_dims: 3
+  in_channels: 1
+  out_channels: 1
+
+datamodule:
+  _target_: aekl_dataloader.ImagingDataLoader
+  batch_size: null
+  is_validate: True
+  train_size: 0.95
+  dataset:
+    _target_: aekl_dataloader.ImagingDataset
+    data_dir: "/path/to/data" 
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  devices: "0"
+  accelerator: "gpu"
+  strategy: 'ddp_find_unused_parameters_true' 
+  max_epochs: 25
+  deterministic: False
+  log_every_n_steps: 2
+  
+
+callbacks:
+  model_checkpoint:
+    _target_: pytorch_lightning.callbacks.ModelCheckpoint
+    monitor: "val_loss"
+    mode: "min"
+    save_last: True
+    dirpath: ${out_dir}
+
+  early_stopping:
+    _target_: pytorch_lightning.callbacks.EarlyStopping
+    monitor: "val_loss"
+    mode: "min"
+    patience: 50
+    min_delta: 0.001
+    verbose: True
+    
+
+encoder:
+  default: 
+    _target_: baseline_3d_VAE.cnn.VariationalEncoder
+    enc_dist:
+      _target_: autoencoders.base.distributions.Normal
+    in_channels: ${model.in_channels}
+
+decoder:
+  default: 
+    _target_: baseline_3d_VAE.cnn.Decoder
+    out_channels: ${model.out_channels}
+    dec_dist:
+      _target_: autoencoders.base.distributions.Default
+
+n_discriminator: 
+  disc_in_channels: 1
+  disc_num_layers: 3
