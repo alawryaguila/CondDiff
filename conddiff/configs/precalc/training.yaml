@@ -1,0 +1,10 @@
+# dataset
+dataset: "precalc"
+
+data_file: "./training_healthy.txt"
+data_path: "/path/to/your/data" # TODO: set to your data path
+affine_path: "/path/to/your/affine/root" # TODO: set to your affine root path
+
+healthy: False #set to true for healthy reconstruction
+healthy_proportion: 0.2
+size: [160, 160, 160] 

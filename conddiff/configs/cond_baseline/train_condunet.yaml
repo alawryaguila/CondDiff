@@ -1,0 +1,51 @@
+# dataset
+dataset: "baughBL"
+
+data_path: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/brain_mris_QCed_skullstripped" 
+data_config_path: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/synthdiff_repo/synthdiff/configs/brainid/una.yaml"
+vae_path: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/results_jp_VAE/AutoencoderKLAD_3D_new/2025-01-27_1538/last.ckpt"
+
+# save and load
+results_dir: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/results_baseline_condUnet"
+pretrained: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/results_baseline_condUnet/034-F20S3-baughBL-nolabels/checkpoints/checkpoint.pt"
+
+# model config: 
+model: condUNet 
+in_channels: 3
+cond_channels: 3
+num_channels: [128, 256, 256]
+attention_levels: [False, False, True]
+num_res_blocks: 1
+num_head_channels: 256
+num_frames: 20
+frame_interval: 3
+fixed_spatial: False
+image_size: 128 
+num_sampling_steps: 1000
+learn_sigma: True 
+labels: False 
+cond: True
+
+# train config:
+save_ceph: True
+learning_rate: 1e-4
+ckpt_every: 20000
+clip_max_norm: 0.1
+start_clip_iter: 0 
+local_batch_size: 10 
+max_epochs: 2000
+global_seed: 3407
+num_workers: 8
+log_every: 100
+lr_warmup_steps: 0
+resume_from_checkpoint: 
+gradient_accumulation_steps: 1
+patience: 100 
+devices: "0,1,2"
+
+
+# low VRAM and speed up training
+use_compile: False
+mixed_precision: False
+enable_xformers_memory_efficient_attention: False
+gradient_checkpointing: False
