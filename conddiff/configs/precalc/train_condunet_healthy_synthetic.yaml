@@ -11,6 +11,7 @@ pretrained:
 
 # model config: 
 model: condUNet 
+input_dims: [160, 160, 160]
 in_channels: 3
 cond_channels: 3
 num_channels: [128, 256, 256]
@@ -25,6 +26,7 @@ num_sampling_steps: 1000
 learn_sigma: True 
 labels: False 
 cond: True
+
 
 # train config:
 save_ceph: True 

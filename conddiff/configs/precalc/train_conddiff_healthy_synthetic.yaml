@@ -11,6 +11,7 @@ pretrained:
 
 # model config: 
 model: conddiff
+input_dims: [160, 160, 160]
 in_channels: 3
 cond_channels: 3
 num_channels: [128, 256, 256]

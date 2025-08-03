@@ -12,6 +12,7 @@ pretrained:
 # model config: 
 model: UNet 
 in_channels: 3
+input_dims: [160, 160, 160]
 num_channels: [128, 256, 256]
 attention_levels: [False, False, True]
 num_res_blocks: 1

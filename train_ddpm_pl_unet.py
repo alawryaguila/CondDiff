@@ -22,7 +22,7 @@ from synthdiff.datasets import get_datamodule
 from synthdiff.diffusion import create_diffusion
 from diffusers.optimization import get_scheduler
 from omegaconf import OmegaConf
-from conddiff_utils import (clip_grad_norm_, update_ema, 
+from conddiff.conddiff_utils import (clip_grad_norm_, update_ema, 
                    requires_grad, cleanup, 
                    get_experiment_dir)
 
@@ -35,7 +35,6 @@ class BestCheckpointCallback(Callback):
         self.best_train_loss = float('inf')
         self.best_val_loss = float('inf')
 
-        # Ensure checkpoint directory exists
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
     def on_train_epoch_end(self, trainer, pl_module):
@@ -81,10 +80,10 @@ class CondDiffTrainingModule(LightningModule):
 
         self.diffusion = create_diffusion(timestep_respacing="")
         input_dims = [(160, 160, 160)]
-        #check that model exists
+
         if not os.path.exists(args.vae_path):
             raise ValueError(f"Model not found at {args.vae_path}")
-        self.vae = AutoencoderKLAD.load_from_checkpoint(args.vae_path, cfg="./aekl_ad_3d_jp.yaml", input_dim=input_dims)
+        self.vae = AutoencoderKLAD.load_from_checkpoint(args.vae_path, cfg="./example_configs/aekl_ad_3d_jp.yaml", input_dim=input_dims)
         self.vae.eval() 
 
 
@@ -100,12 +99,12 @@ class CondDiffTrainingModule(LightningModule):
 
     def _load_pretrained_parameters(self, args):
         checkpoint = torch.load(args.pretrained, map_location=lambda storage, loc: storage)
-        if "ema" in checkpoint:  # supports checkpoints from train.py
+        if "ema" in checkpoint:  
             self.logging.info("Using ema ckpt!")
             checkpoint = checkpoint["ema"]
 
         model_dict = self.model.state_dict()
-        # 1. filter out unnecessary keys
+
         pretrained_dict = {}
         for k, v in checkpoint.items():
             if k in model_dict:
@@ -114,7 +113,7 @@ class CondDiffTrainingModule(LightningModule):
                 self.logging.info("Ignoring: {}".format(k))
         self.logging.info(f"Successfully Load {len(pretrained_dict) / len(checkpoint.items()) * 100}% original pretrained model weights ")
 
-        # 2. overwrite entries in the existing state dict
+
         model_dict.update(pretrained_dict)
         self.model.load_state_dict(model_dict)
         self.logging.info(f"Successfully load model at {args.pretrained}!")
@@ -138,13 +137,12 @@ class CondDiffTrainingModule(LightningModule):
     def step_(self, batch, batch_idx):
         sample_im = batch['input_healthy']
 
-        #get the max value in the sample image
         x = sample_im.to(self.device, non_blocking=True)
         if self.args.labels:
             label = batch['label'].to(self.device, non_blocking=True)
 
         with torch.no_grad():
-            # Map input images to latent space + normalize latents:
+
             x = x.to(self.device)
             this_device = x.device
             self.vae = self.vae.to(this_device)
@@ -214,12 +212,11 @@ def create_logger(logging_dir):
 
 def create_experiment_directory(args):
 
-    os.makedirs(args.results_dir, exist_ok=True)  # Make results folder (holds all experiment subfolders)
-    #get the experiment index from ordering the folders in results_dir
+    os.makedirs(args.results_dir, exist_ok=True) 
     folders = [f for f in os.listdir(args.results_dir) if os.path.isdir(os.path.join(args.results_dir, f))]
     #order the folders by name
     folders = sorted(folders)
-    #get the experiment index from the last folder
+
     if len(folders) > 0:
         experiment_index = int(folders[-1].split("-")[0]) + 1
     else:
@@ -229,12 +226,12 @@ def create_experiment_directory(args):
         experiment_dir = args.experiment_dir
     else:
         experiment_dir = f"{args.results_dir}/{experiment_index:03d}-{num_frame_string}-{args.dataset}"  
-        #check that experiment_dir is empty
+
         if os.path.exists(experiment_dir):
             raise ValueError(f"Experiment directory {experiment_dir} already exists")
         experiment_dir = get_experiment_dir(experiment_dir, args)
         
-    checkpoint_dir = f"{experiment_dir}/checkpoints"  # Stores saved model checkpoints
+    checkpoint_dir = f"{experiment_dir}/checkpoints"  
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     return experiment_dir, checkpoint_dir
@@ -243,9 +240,8 @@ def main(args):
     seed = args.global_seed
     torch.manual_seed(seed)
 
-    # Determine if the current process is the main process (rank 0)
     is_main_process = (int(os.environ.get("LOCAL_RANK", 0)) == 0)
-    # Setup an experiment folder and logger only if main process
+
     if is_main_process:
         experiment_dir, checkpoint_dir = create_experiment_directory(args)
         logger = create_logger(experiment_dir)
@@ -273,22 +269,19 @@ def main(args):
     sample_size = args.image_size // 8
     args.latent_size = sample_size
 
-    # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len_)
 
-    # Afterwards we recalculate our number of training epochs
     if args.max_epochs is not None:
         num_train_epochs = args.max_epochs
         args.max_train_steps = num_train_epochs * num_update_steps_per_epoch
     else:
         num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
         args.max_train_steps = args.max_train_steps
-    # In multi GPUs mode, the real batchsize is local_batch_size * GPU numbers
+
     if is_main_process:
         logger.info(f"One epoch iteration {num_update_steps_per_epoch} steps")
         logger.info(f"Num train epochs: {num_train_epochs}")
 
-    # Initialize the training module
     pl_module = CondDiffTrainingModule(args, device, logger)
 
     checkpoint_callback = ModelCheckpoint(
@@ -309,7 +302,7 @@ def main(args):
         mode="min",
     )
 
-    # Trainer
+
     trainer = Trainer(
         accelerator="gpu",
         devices=args.devices, 

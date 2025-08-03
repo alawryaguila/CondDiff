@@ -1,17 +1,18 @@
 # dataset
 dataset: "baughBL"
 
-data_path: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/brain_mris_QCed_skullstripped" 
-data_config_path: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/synthdiff_repo/synthdiff/configs/brainid/una.yaml"
-vae_path: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/results_jp_VAE/AutoencoderKLAD_3D_new/2025-01-27_1538/last.ckpt"
+data_path: "/path/to/your/data" # TODO: set to your data path
+data_config_path: "./configs/precalc/training.yaml"
+vae_path: "/path/to/your/vae_model.ckpt"
 
 # save and load
-results_dir: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/results_baseline_condUnet"
-pretrained: "/autofs/space/almeria_001/users/aa1215/joint_proj_peirong/results_baseline_condUnet/034-F20S3-baughBL-nolabels/checkpoints/checkpoint.pt"
+results_dir: "./results_dir"
+pretrained: "./path/to/checkpoints/checkpoint.pt"
 
 # model config: 
 model: condUNet 
 in_channels: 3
+input_dims: [160, 160, 160]
 cond_channels: 3
 num_channels: [128, 256, 256]
 attention_levels: [False, False, True]
